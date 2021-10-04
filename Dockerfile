@@ -1,5 +1,7 @@
 FROM alpine:3.13
 
+MAINTAINER Yuriy Yurinskiy <yuriyyurinskiy@yandex.ru>
+
 # dependencies required for running "phpize"
 # these get automatically installed and removed by "docker-php-ext-*" (unless they're already installed)
 ENV PHPIZE_DEPS \
@@ -20,7 +22,11 @@ RUN apk add --no-cache \
 		tar \
 		xz \
 # https://github.com/docker-library/php/issues/494
-		openssl
+		openssl \
+# tfomskk deps
+        openssh-client \
+        git \
+        jq=1.6-r1
 
 # ensure www-data user exists
 RUN set -eux; \
@@ -95,6 +101,13 @@ RUN set -eux; \
 		openssl-dev \
 		readline-dev \
 		sqlite-dev \
+# tfomskk
+        libzip-dev \
+        libpng-dev \
+        jpeg-dev \
+    	freetype-dev \
+    	libjpeg-turbo-dev \
+        icu-dev \
 	; \
 	\
 	export \
@@ -137,6 +150,15 @@ RUN set -eux; \
 		--with-openssl \
 		--with-readline \
 		--with-zlib \
+        \
+# tfoms php-ext
+        --with-png-dir=/usr/lib/ \
+        --with-freetype-dir=/usr/lib/ \
+        --with-jpeg-dir=/usr/lib/ \
+        --with-gd \
+        --enable-zip \
+        --enable-intl \
+        --enable-exif \
 		\
 # bundled pcre does not support JIT on s390x
 # https://manpages.debian.org/bullseye/libpcre3-dev/pcrejit.3.en.html#AVAILABILITY_OF_JIT_SUPPORT
@@ -177,6 +199,16 @@ COPY docker-php-ext-* docker-php-entrypoint /usr/local/bin/
 
 # sodium was built as a shared module (so that it can be replaced later if so desired), so let's enable it too (https://github.com/docker-library/php/issues/598)
 RUN docker-php-ext-enable sodium
+
+# composer
+RUN set -eux; \
+    mkdir /tmp/composer; \
+    curl -sS https://getcomposer.org/installer -o /tmp/composer/composer-setup.php; \
+    php /tmp/composer/composer-setup.php --version=1.10.20 --install-dir=/usr/local/bin --filename=composer; \
+	rm -rf /tmp/composer; \
+    \
+# smoke test
+    composer --version
 
 ENTRYPOINT ["docker-php-entrypoint"]
 CMD ["php", "-a"]
