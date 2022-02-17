@@ -24,6 +24,7 @@ RUN apk add --no-cache \
 # https://github.com/docker-library/php/issues/494
 		openssl \
 # tfomskk deps
+        bash \
         openssh-client \
         git \
         jq=1.6-r1
